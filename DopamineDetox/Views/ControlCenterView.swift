@@ -1,47 +1,79 @@
 import SwiftUI
-import UIKit
 
 struct ControlCenterView: View {
     @EnvironmentObject var screenTime: ScreenTimeManager
     @State private var showingPicker = false
     @State private var showingUnlock = false
-    @State private var nowTick = Date()
     @State private var submitting = false
     @State private var submitMessage: String?
+    @State private var lastSubmittedDay: String?
 
-    private var minutesUsed: Int {
-        guard let start = screenTime.monitoringStartedAt else { return 0 }
-        let elapsed = Int(nowTick.timeIntervalSince(start) / 60)
-        return min(Theme.dailyLimitMinutes, max(0, elapsed))
+    private var streak: Int { screenTime.history.currentStreak }
+
+    private enum Status { case idle, monitoring, shielded }
+
+    private var status: Status {
+        if screenTime.shielded { return .shielded }
+        if screenTime.monitoringStartedAt != nil { return .monitoring }
+        return .idle
     }
-    private var minutesRemaining: Int {
-        screenTime.shielded ? 0 : max(0, Theme.dailyLimitMinutes - minutesUsed)
+
+    private var gaugeProgress: Double {
+        switch status {
+        case .idle: return 0
+        case .monitoring: return 0.5
+        case .shielded: return 1.0
+        }
     }
-    private var progress: Double {
-        screenTime.shielded ? 1.0 : Double(minutesUsed) / Double(Theme.dailyLimitMinutes)
+
+    private var gaugeTint: Color {
+        switch status {
+        case .idle: return Theme.textSecondary
+        case .monitoring: return Theme.accent
+        case .shielded: return Theme.danger
+        }
     }
+
+    private var statusBadge: String {
+        switch status {
+        case .idle: return "Idle"
+        case .monitoring: return "Monitoring"
+        case .shielded: return "Shielded"
+        }
+    }
+
+    private var statusBadgeColor: Color {
+        switch status {
+        case .idle: return Theme.textSecondary
+        case .monitoring: return Theme.accent
+        case .shielded: return Theme.danger
+        }
+    }
+
     private var canStart: Bool {
-        !screenTime.selection.applicationTokens.isEmpty ||
-        !screenTime.selection.categoryTokens.isEmpty
+        screenTime.authState == .authorized && screenTime.hasAppsSelected
+    }
+
+    private var alreadySubmittedToday: Bool {
+        lastSubmittedDay == ISO8601Day.todayString()
     }
 
     var body: some View {
         ZStack {
             Theme.background.ignoresSafeArea()
-            VStack(spacing: 28) {
-                header
-                Spacer(minLength: 0)
-                CircularGaugeView(
-                    progress: progress,
-                    centerValue: "\(minutesRemaining)",
-                    centerLabel: "minutes left",
-                    tint: screenTime.shielded ? Theme.danger : Theme.accent
-                )
-                statusLine
-                Spacer(minLength: 0)
-                actions
+            ScrollView {
+                VStack(spacing: 28) {
+                    header
+                    if screenTime.authState == .denied {
+                        authDeniedBanner
+                    }
+                    gauge
+                    statusLine
+                    actions
+                }
+                .padding(28)
+                .frame(minHeight: UIScreen.main.bounds.height - 80)
             }
-            .padding(28)
         }
         .sheet(isPresented: $showingPicker) {
             AppSelectionView(initial: screenTime.selection)
@@ -53,10 +85,7 @@ struct ControlCenterView: View {
                 .environmentObject(screenTime)
                 .preferredColorScheme(.dark)
         }
-        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
-            nowTick = Date()
-            screenTime.refreshState()
-        }
+        .onAppear { restoreLastSubmittedDay() }
     }
 
     private var header: some View {
@@ -69,25 +98,62 @@ struct ControlCenterView: View {
                     .font(.caption2)
                     .textCase(.uppercase)
                     .tracking(2)
-                    .foregroundStyle(screenTime.shielded ? Theme.danger : Theme.textSecondary)
+                    .foregroundStyle(statusBadgeColor)
             }
             Spacer()
         }
     }
 
-    private var statusBadge: String {
-        if screenTime.shielded { return "Shielded" }
-        if screenTime.monitoringStartedAt != nil { return "Monitoring" }
-        return "Idle"
+    private var authDeniedBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Screen Time access denied")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(Theme.textPrimary)
+            Text("Open Settings → Screen Time → Family Controls and allow Dopamine Detox.")
+                .font(.caption)
+                .foregroundStyle(Theme.textSecondary)
+            Button("Open Settings") {
+                screenTime.openSystemSettings()
+            }
+            .font(.callout.weight(.medium))
+            .foregroundStyle(Theme.accent)
+            .padding(.top, 4)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Theme.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Theme.danger.opacity(0.7), lineWidth: 1)
+        )
+        .cornerRadius(8)
+    }
+
+    private var gauge: some View {
+        CircularGaugeView(
+            progress: gaugeProgress,
+            centerValue: "\(streak)",
+            centerLabel: streak == 1 ? "day streak" : "day streak",
+            tint: gaugeTint
+        )
     }
 
     private var statusLine: some View {
         VStack(spacing: 6) {
-            Text("Daily limit \(Theme.dailyLimitMinutes) min")
+            Text("Daily limit \(AppConstants.dailyLimitMinutes) minutes")
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
-            if !canStart {
-                Text("No distraction apps selected")
+            switch status {
+            case .idle:
+                Text(canStart ? "Ready to start your day" : "Pick distraction apps to begin")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
+            case .monitoring:
+                Text("Tracking against your selected apps")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
+            case .shielded:
+                Text("Apps blocked until midnight")
                     .font(.caption)
                     .foregroundStyle(Theme.danger.opacity(0.85))
             }
@@ -102,13 +168,13 @@ struct ControlCenterView: View {
     private var actions: some View {
         VStack(spacing: 10) {
             primaryButton("Choose distraction apps") { showingPicker = true }
-            primaryButton(screenTime.monitoringStartedAt == nil ? "Start day" : "Restart day") {
+            primaryButton(status == .idle ? "Start day" : "Restart day") {
                 try? screenTime.startMonitoring()
             }
             .opacity(canStart ? 1 : 0.4)
             .disabled(!canStart)
 
-            if screenTime.shielded {
+            if status == .shielded {
                 Button { showingUnlock = true } label: {
                     Text("Emergency unlock")
                         .font(.callout)
@@ -119,18 +185,18 @@ struct ControlCenterView: View {
             }
 
             Button {
-                Task { await submitScore() }
+                Task { await submitStreak() }
             } label: {
                 HStack(spacing: 8) {
                     if submitting { ProgressView().scaleEffect(0.7) }
-                    Text("Submit today's score")
+                    Text(alreadySubmittedToday ? "Streak submitted" : "Submit streak to leaderboard")
                         .font(.footnote)
-                        .foregroundStyle(Theme.textSecondary)
+                        .foregroundStyle(alreadySubmittedToday ? Theme.success : Theme.textSecondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
             }
-            .disabled(submitting)
+            .disabled(submitting || alreadySubmittedToday)
         }
     }
 
@@ -146,16 +212,30 @@ struct ControlCenterView: View {
         }
     }
 
-    private func submitScore() async {
+    private func restoreLastSubmittedDay() {
+        let defaults = UserDefaults(suiteName: AppConstants.appGroup)
+        lastSubmittedDay = defaults?.string(forKey: SharedKeys.lastSubmittedDay)
+    }
+
+    private func submitStreak() async {
         submitting = true
         defer { submitting = false }
-        let score = minutesRemaining
-        let userId = UIDevice.current.identifierForVendor?.uuidString ?? "anonymous"
+        let day = ISO8601Day.todayString()
         do {
-            try await SupabaseService.shared.postDailyScore(userId: userId, score: score)
-            submitMessage = "Score \(score) submitted"
+            try await SupabaseService.shared.upsertStreak(
+                userId: screenTime.stableUserId,
+                score: streak,
+                day: day
+            )
+            let defaults = UserDefaults(suiteName: AppConstants.appGroup)
+            defaults?.set(day, forKey: SharedKeys.lastSubmittedDay)
+            defaults?.set(streak, forKey: SharedKeys.lastSubmittedScore)
+            lastSubmittedDay = day
+            submitMessage = "Submitted streak: \(streak)"
+        } catch SupabaseError.notConfigured {
+            submitMessage = "Leaderboard not configured"
         } catch {
-            submitMessage = "Submit failed"
+            submitMessage = "Submit failed — try again"
         }
     }
 }

@@ -40,6 +40,7 @@ targets:
         excludes:
           - "Info.plist"
           - "DopamineDetox.entitlements"
+      - path: Shared
     info:
       path: DopamineDetox/Info.plist
       properties:
@@ -97,6 +98,7 @@ targets:
         excludes:
           - "Info.plist"
           - "DopamineDetoxMonitor.entitlements"
+      - path: Shared
     info:
       path: DopamineDetoxMonitor/Info.plist
       properties:

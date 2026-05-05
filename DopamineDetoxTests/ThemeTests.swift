@@ -1,12 +1,16 @@
 import XCTest
 @testable import DopamineDetox
 
-final class ThemeTests: XCTestCase {
+final class AppConstantsTests: XCTestCase {
     func testDailyLimitIs120Minutes() {
-        XCTAssertEqual(Theme.dailyLimitMinutes, 120)
+        XCTAssertEqual(AppConstants.dailyLimitMinutes, 120)
     }
 
     func testAppGroupMatchesEntitlements() {
-        XCTAssertEqual(Theme.appGroup, "group.com.cheddarlebel.dopaminedetox")
+        XCTAssertEqual(AppConstants.appGroup, "group.com.cheddarlebel.dopaminedetox")
+    }
+
+    func testShieldStoreNameIsStable() {
+        XCTAssertEqual(AppConstants.shieldStoreName, "DopamineDetoxShield")
     }
 }

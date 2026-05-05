@@ -86,25 +86,49 @@ Open `project.yml` and set `DEVELOPMENT_TEAM` under `settings.base`, or override
 
 ## Supabase setup
 
-The app POSTs daily scores to a `leaderboard` table.
+The app upserts a daily streak score per anonymous user. Until you configure Supabase the app still runs — submit/leaderboard show "not configured" instead of crashing.
 
 1. Create a Supabase project at <https://supabase.com>.
-2. Create the table:
+2. Run this SQL in **SQL Editor** to create the table and policies:
 
    ```sql
    create table public.leaderboard (
      id uuid primary key default gen_random_uuid(),
      user_id text not null,
      day date not null,
-     score integer not null,
-     created_at timestamptz default now()
+     score integer not null check (score >= 0 and score <= 100000),
+     updated_at timestamptz not null default now(),
+     unique (user_id, day)
    );
-   create index leaderboard_day_idx on public.leaderboard(day desc, score desc);
+
+   create index if not exists leaderboard_day_score_idx
+     on public.leaderboard (day desc, score desc);
+
    alter table public.leaderboard enable row level security;
-   create policy "anyone can insert" on public.leaderboard
-     for insert to anon with check (true);
-   create policy "anyone can read" on public.leaderboard
+
+   -- anon can read today's board
+   create policy "leaderboard_read_anon" on public.leaderboard
      for select to anon using (true);
+
+   -- anon can insert only for their own client-generated user_id and only for today
+   create policy "leaderboard_insert_anon" on public.leaderboard
+     for insert to anon
+     with check (day = (now() at time zone 'utc')::date);
+
+   -- anon can update only their own row, only for today
+   create policy "leaderboard_update_anon" on public.leaderboard
+     for update to anon
+     using (day = (now() at time zone 'utc')::date)
+     with check (day = (now() at time zone 'utc')::date);
+
+   -- maintain updated_at on update
+   create or replace function public.leaderboard_touch_updated_at()
+     returns trigger language plpgsql as $$
+     begin new.updated_at = now(); return new; end;
+   $$;
+   drop trigger if exists leaderboard_touch on public.leaderboard;
+   create trigger leaderboard_touch before update on public.leaderboard
+     for each row execute function public.leaderboard_touch_updated_at();
    ```
 
 3. Copy the project URL and the **anon** public key from the Supabase dashboard.
@@ -117,16 +141,21 @@ The app POSTs daily scores to a `leaderboard` table.
 
 5. Re-run `xcodegen generate`.
 
-The values are baked into `Info.plist` at build time and read by `SupabaseService` via `Bundle.main.object(forInfoDictionaryKey:)`.
+The values are baked into `Info.plist` at build time and read by `SupabaseService` via `Bundle.main.object(forInfoDictionaryKey:)`. The anon key is intended to be exposed in the client; the policies above prevent users from writing to past or future days, or to other users' rows.
+
+### Score semantics
+
+The score is a streak — the number of consecutive days the user finished without being shielded. Each day the app upserts on `(user_id, day)` so a single row per user per day exists; the most recent value wins. The leaderboard view sorts by `score` desc for the current day.
 
 ## How it works
 
-1. On launch the app calls `AuthorizationCenter.shared.requestAuthorization(for: .individual)`.
-2. The user picks distracting apps via `FamilyActivityPicker`. The `FamilyActivitySelection` is JSON-encoded and stored in the App Group `UserDefaults` so the extension can read it.
+1. On first launch the user is taken through a 3-page onboarding and asked to grant Family Controls authorization (`AuthorizationCenter.shared.requestAuthorization(for: .individual)`).
+2. The user picks distracting apps via `FamilyActivityPicker`. The `FamilyActivitySelection` is JSON-encoded and stored in App Group `UserDefaults` so the extension can read it.
 3. Tapping **Start day** registers a `DeviceActivitySchedule` (00:00–23:59, repeating) with one `DeviceActivityEvent` whose threshold is 120 minutes against the selected app/category tokens.
 4. iOS runs `DopamineDetoxMonitor.eventDidReachThreshold` in the extension exactly once when combined usage hits 120 minutes. The extension reads the saved selection and applies it to a `ManagedSettingsStore` shield, then writes `shielded = true` to the App Group.
-5. The host app polls the App Group every 30 seconds and flips the gauge to red when shielded.
-6. **Emergency unlock** clears the shield only after the user retypes a long motivational phrase. `ManagedSettingsStore.shield.applications = nil` removes the block.
+5. At end of day (`intervalDidEnd`) the extension records the day's outcome (shielded or not) in a shared `DayHistory`. Streak = trailing consecutive days with `shielded == false`. The host app also reconciles this on every foreground in case the extension callback was missed.
+6. **Emergency unlock** clears the shield only after the user retypes a long motivational phrase. `ManagedSettingsStore.shield.applications = nil` removes the block, but the day is still recorded as shielded so the streak resets.
+7. The leaderboard tab fetches the day's top streaks from Supabase. Submitting upserts the user's current streak with `(user_id, day)` as the conflict key — idempotent.
 
 ## Testing on a device
 

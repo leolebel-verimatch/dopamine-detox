@@ -8,8 +8,5 @@ enum Theme {
     static let textSecondary = Color(red: 0.55, green: 0.55, blue: 0.52)
     static let accent = Color(red: 0.83, green: 0.65, blue: 0.45)
     static let danger = Color(red: 0.78, green: 0.35, blue: 0.30)
-
-    static let dailyLimitMinutes: Int = 120
-    static let appGroup = "group.com.cheddarlebel.dopaminedetox"
-    static let shieldStoreName = "DopamineDetoxShield"
+    static let success = Color(red: 0.55, green: 0.72, blue: 0.55)
 }

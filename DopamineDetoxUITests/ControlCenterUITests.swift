@@ -5,28 +5,34 @@ final class ControlCenterUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    func testLaunchAndShowsControlCenter() {
+    private func launchedApp() -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchArguments += ["-hasOnboarded", "YES"]
         app.launch()
+        return app
+    }
 
+    func testLaunchAndShowsControlCenter() {
+        let app = launchedApp()
         XCTAssertTrue(app.staticTexts["Dopamine Detox"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["minutes left"].exists)
         XCTAssertTrue(app.buttons["Choose distraction apps"].exists)
     }
 
     func testStartDayDisabledWithoutSelection() {
-        let app = XCUIApplication()
-        app.launch()
-
+        let app = launchedApp()
         let startButton = app.buttons["Start day"]
         XCTAssertTrue(startButton.waitForExistence(timeout: 5))
         XCTAssertFalse(startButton.isEnabled)
     }
 
-    func testNoAppsSelectedWarningVisible() {
-        let app = XCUIApplication()
-        app.launch()
+    func testLeaderboardTabIsPresent() {
+        let app = launchedApp()
+        XCTAssertTrue(app.tabBars.buttons["Leaderboard"].waitForExistence(timeout: 5))
+    }
 
-        XCTAssertTrue(app.staticTexts["No distraction apps selected"].waitForExistence(timeout: 5))
+    func testLeaderboardOpens() {
+        let app = launchedApp()
+        app.tabBars.buttons["Leaderboard"].tap()
+        XCTAssertTrue(app.staticTexts["Leaderboard"].waitForExistence(timeout: 5))
     }
 }
