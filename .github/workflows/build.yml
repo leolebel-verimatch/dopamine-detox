@@ -8,20 +8,33 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: macos-15
+    runs-on: macos-14
     timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+      - name: Show available simulators
+        run: |
+          xcodebuild -version
+          xcrun simctl list runtimes | grep -i ios || true
+          xcrun simctl list devices available | grep -i iphone | head -5 || true
 
       - name: Install xcodegen
         run: brew install xcodegen xcbeautify
 
       - name: Generate project
         run: xcodegen generate
+
+      - name: Pick simulator destination
+        id: dest
+        run: |
+          DEVICE=$(xcrun simctl list devices available | grep -E 'iPhone 1[5-9]' | head -1 | sed -E 's/^[[:space:]]+([^(]+).*/\1/' | xargs)
+          if [ -z "$DEVICE" ]; then
+            DEVICE=$(xcrun simctl list devices available | grep -E 'iPhone' | head -1 | sed -E 's/^[[:space:]]+([^(]+).*/\1/' | xargs)
+          fi
+          echo "Using device: $DEVICE"
+          echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
 
       - name: Resolve packages
         run: |
@@ -37,7 +50,7 @@ jobs:
           xcodebuild \
             -project DopamineDetox.xcodeproj \
             -scheme DopamineDetox \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+            -destination "platform=iOS Simulator,name=${{ steps.dest.outputs.device }}" \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             build | xcbeautify --renderer github-actions
@@ -48,7 +61,7 @@ jobs:
           xcodebuild \
             -project DopamineDetox.xcodeproj \
             -scheme DopamineDetox \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+            -destination "platform=iOS Simulator,name=${{ steps.dest.outputs.device }}" \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             test | xcbeautify --renderer github-actions
