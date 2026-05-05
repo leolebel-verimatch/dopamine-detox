@@ -1,0 +1,112 @@
+name: DopamineDetox
+options:
+  bundleIdPrefix: com.cheddarlebel
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+
+schemes:
+  DopamineDetox:
+    build:
+      targets:
+        DopamineDetox: all
+        DopamineDetoxMonitor: all
+    test:
+      targets:
+        - DopamineDetoxTests
+        - DopamineDetoxUITests
+      gatherCoverageData: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.5.1
+
+targets:
+  DopamineDetox:
+    type: application
+    platform: iOS
+    sources:
+      - path: DopamineDetox
+        excludes:
+          - "Info.plist"
+          - "DopamineDetox.entitlements"
+    info:
+      path: DopamineDetox/Info.plist
+      properties:
+        UILaunchScreen:
+          UIColorName: ""
+        UIRequiresFullScreen: false
+        UIUserInterfaceStyle: Dark
+        CFBundleDisplayName: Dopamine Detox
+        SUPABASE_URL: $(SUPABASE_URL)
+        SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cheddarlebel.dopaminedetox
+        CODE_SIGN_ENTITLEMENTS: DopamineDetox/DopamineDetox.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: NO
+        SUPABASE_URL: https://YOUR_PROJECT.supabase.co
+        SUPABASE_ANON_KEY: REPLACE_ME
+    dependencies:
+      - target: DopamineDetoxMonitor
+        embed: true
+      - package: Supabase
+        product: Supabase
+
+  DopamineDetoxTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: DopamineDetoxTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cheddarlebel.dopaminedetox.tests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: DopamineDetox
+
+  DopamineDetoxUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: DopamineDetoxUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cheddarlebel.dopaminedetox.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: DopamineDetox
+    dependencies:
+      - target: DopamineDetox
+
+  DopamineDetoxMonitor:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: DopamineDetoxMonitor
+        excludes:
+          - "Info.plist"
+          - "DopamineDetoxMonitor.entitlements"
+    info:
+      path: DopamineDetoxMonitor/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.deviceactivity.monitor-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).DopamineDetoxMonitor
+        CFBundleDisplayName: Dopamine Detox Monitor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cheddarlebel.dopaminedetox.monitor
+        CODE_SIGN_ENTITLEMENTS: DopamineDetoxMonitor/DopamineDetoxMonitor.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1,2"

@@ -1,0 +1,29 @@
+## macOS
+.DS_Store
+
+## Xcode build
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+
+## xcodegen output (we regenerate from project.yml in CI)
+DopamineDetox.xcodeproj/
+
+## Swift Package Manager
+.swiftpm/
+Package.resolved
+
+## Local secrets
+*.xcconfig.local
+.env
+.env.local
+
+## CocoaPods (if ever added)
+Pods/
+
+## Fastlane (if ever added)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png

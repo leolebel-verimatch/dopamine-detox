@@ -1,0 +1,54 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+
+      - name: Install xcodegen
+        run: brew install xcodegen xcbeautify
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Resolve packages
+        run: |
+          xcodebuild \
+            -project DopamineDetox.xcodeproj \
+            -scheme DopamineDetox \
+            -destination 'generic/platform=iOS Simulator' \
+            -resolvePackageDependencies
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project DopamineDetox.xcodeproj \
+            -scheme DopamineDetox \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build | xcbeautify --renderer github-actions
+
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project DopamineDetox.xcodeproj \
+            -scheme DopamineDetox \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            test | xcbeautify --renderer github-actions
