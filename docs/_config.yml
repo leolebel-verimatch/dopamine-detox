@@ -1,0 +1,13 @@
+title: Dopamine Detox
+description: Cap your daily distractions. Build a streak. Reclaim your attention.
+url: https://leolebel-verimatch.github.io
+baseurl: /dopamine-detox
+theme: minima
+plugins:
+  - jekyll-seo-tag
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
