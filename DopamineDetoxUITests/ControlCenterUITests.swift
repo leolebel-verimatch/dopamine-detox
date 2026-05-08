@@ -14,7 +14,7 @@ final class ControlCenterUITests: XCTestCase {
 
     func testLaunchAndShowsControlCenter() {
         let app = launchedApp()
-        XCTAssertTrue(app.staticTexts["Endscroll"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Last Scroll"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Choose distraction apps"].exists)
     }
 
