@@ -91,7 +91,7 @@ struct ControlCenterView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Slowfeed")
+                Text("Endscroll")
                     .font(.system(.title3, weight: .medium))
                     .foregroundStyle(Theme.textPrimary)
                 Text(statusBadge)
