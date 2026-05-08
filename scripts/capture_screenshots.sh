@@ -22,6 +22,14 @@ for spec in "${DEVICES[@]}"; do
   rm -rf "$OUT/$bucket"
   mkdir -p "$OUT/$bucket"
 
+  # Stale simulator state (orphaned XPC handles, dyld caches) trips the
+  # XCUITest runner with "Application failed preflight checks". Reset.
+  xcrun simctl shutdown all >/dev/null 2>&1 || true
+  device_id=$(xcrun simctl list devices available | grep -F "$device (" | head -1 | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')
+  if [ -n "$device_id" ]; then
+    xcrun simctl erase "$device_id" 2>/dev/null || true
+  fi
+
   xcodebuild test \
     -project "$ROOT/DopamineDetox.xcodeproj" \
     -scheme DopamineDetox \
