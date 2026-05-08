@@ -5,10 +5,10 @@ title: Support
 
 # Support
 
-Need help with Dopamine Detox? Email **cheddar.lebel@gmail.com** — please include:
+Need help with Last Scroll? Email **cheddar.lebel@gmail.com** — please include:
 
 - A short description of what happened
-- The version of the app (Settings → About in iOS Settings → Apps → Dopamine Detox)
+- The version of the app (Settings → About in iOS Settings → Apps → Last Scroll)
 - Your iOS version
 - The model of iPhone or iPad you are using
 
@@ -18,7 +18,7 @@ Need help with Dopamine Detox? Email **cheddar.lebel@gmail.com** — please incl
 
 Make sure:
 
-1. You granted Family Controls authorization on first launch. (Settings → Screen Time → Communication & Content Restrictions → Apps → Dopamine Detox should show "Allowed".)
+1. You granted Family Controls authorization on first launch. (Settings → Screen Time → Communication & Content Restrictions → Apps → Last Scroll should show "Allowed".)
 2. You've selected at least one app or category as a distraction in the app.
 3. You've tapped **Start day** at least once.
 4. The combined use of those apps reaches 120 minutes during the day.

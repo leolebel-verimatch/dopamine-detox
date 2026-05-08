@@ -95,7 +95,7 @@ In Xcode:
 ## 7. Create the App Store Connect listing (~20 min)
 
 1. <https://appstoreconnect.apple.com/apps> → **+** → **New App**
-2. Platform: iOS · Name: **Dopamine Detox** · Primary Language: English (U.S.) · Bundle ID: pick `com.cheddarlebel.dopaminedetox` · SKU: `dopamine-detox-ios` · User Access: Full Access
+2. Platform: iOS · Name: **Last Scroll** · Primary Language: English (U.S.) · Bundle ID: pick `com.cheddarlebel.dopaminedetox` · SKU: `dopamine-detox-ios` · User Access: Full Access
 3. Fill every field from `store/metadata.md`:
    - **App Information** tab: subtitle, category, age rating questionnaire, content rights, copyright
    - **Pricing and Availability**: Free, all territories

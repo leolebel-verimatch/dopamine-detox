@@ -1,4 +1,4 @@
-# Dopamine Detox
+# Last Scroll
 
 A SwiftUI iOS app that lets you cap daily usage of distracting apps. After 120 minutes of combined use, a system-level shield blocks access for the rest of the day. Lifting the shield requires manually typing a long motivational sentence — friction is the point.
 

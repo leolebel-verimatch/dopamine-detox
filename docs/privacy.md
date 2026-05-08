@@ -7,13 +7,13 @@ title: Privacy Policy
 
 _Last updated: May 4, 2026_
 
-Dopamine Detox is built to help you reclaim time from distracting apps. We collect the minimum amount of information required to run the app and operate the leaderboard.
+Last Scroll is built to help you reclaim time from distracting apps. We collect the minimum amount of information required to run the app and operate the leaderboard.
 
 ## What we collect
 
 **On your device only (never transmitted):**
 
-- The list of apps and categories you've selected as "distractions". This is held by Apple's Family Controls framework as opaque tokens — Dopamine Detox never receives the names of the apps. We can ask the system to block a token, but we cannot read which app it is.
+- The list of apps and categories you've selected as "distractions". This is held by Apple's Family Controls framework as opaque tokens — Last Scroll never receives the names of the apps. We can ask the system to block a token, but we cannot read which app it is.
 - The dates on which you finished a day under your time limit and the dates on which you exceeded it. These are stored in an App Group container so the in-app activity monitor extension can update them.
 - Your monitoring start time and current shield status, also App-Group-only.
 
@@ -50,7 +50,7 @@ Leaderboard rows are retained indefinitely so historical streaks remain visible.
 
 ## Children
 
-Dopamine Detox does not knowingly collect any information from children under 13. The Family Controls framework is designed to support both individual self-management and parental supervision; this app uses it for individual self-management only.
+Last Scroll does not knowingly collect any information from children under 13. The Family Controls framework is designed to support both individual self-management and parental supervision; this app uses it for individual self-management only.
 
 ## Changes to this policy
 

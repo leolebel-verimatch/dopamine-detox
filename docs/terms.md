@@ -7,11 +7,11 @@ title: Terms of Use
 
 _Last updated: May 4, 2026_
 
-By downloading, installing, or using Dopamine Detox you agree to the terms below. If you do not agree, do not use the app.
+By downloading, installing, or using Last Scroll you agree to the terms below. If you do not agree, do not use the app.
 
 ## What the app does
 
-Dopamine Detox lets you nominate a list of apps that distract you and asks Apple's Family Controls system to apply a system-level shield to those apps for the remainder of the day after 120 minutes of combined use. The app also records your day-by-day streak of staying under the limit and lets you submit it to a public leaderboard.
+Last Scroll lets you nominate a list of apps that distract you and asks Apple's Family Controls system to apply a system-level shield to those apps for the remainder of the day after 120 minutes of combined use. The app also records your day-by-day streak of staying under the limit and lets you submit it to a public leaderboard.
 
 ## How the app may be used
 

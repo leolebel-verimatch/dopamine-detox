@@ -1,4 +1,4 @@
-# App Store Connect Metadata — Dopamine Detox
+# App Store Connect Metadata — Last Scroll
 
 Copy-paste source for the App Store Connect listing. Each section maps to a field in the **App Information**, **Pricing**, **App Privacy**, or **Version** tab.
 
@@ -8,7 +8,7 @@ Copy-paste source for the App Store Connect listing. Each section maps to a fiel
 
 | Field | Value |
 |---|---|
-| Name | `Dopamine Detox` |
+| Name | `Last Scroll` |
 | Subtitle | `Cap your distracting apps daily` |
 | Bundle ID | `com.cheddarlebel.dopaminedetox` |
 | SKU | `dopamine-detox-ios` |
@@ -44,13 +44,13 @@ Pick the apps that drain your day. After 120 minutes they go dark until midnight
 ### Description (4000 char max)
 
 ```
-Dopamine Detox caps the apps that pull you away from your day.
+Last Scroll caps the apps that pull you away from your day.
 
 Pick your distractions — Instagram, TikTok, X, YouTube, news, whatever owns your thumb — and the app monitors combined daily use through Apple's Family Controls. The moment you cross 120 minutes, those apps go dark for the rest of the day. iOS does the blocking; we just set the limit.
 
 How it works:
 • Tap to select the apps and categories you want capped.
-• Tap "Start day". Dopamine Detox arms a 120-minute daily timer against just those apps.
+• Tap "Start day". Last Scroll arms a 120-minute daily timer against just those apps.
 • Use them as you normally would. When you reach the limit, they're shielded until midnight.
 • Survive the day under the limit and your streak grows by one. Get shielded and it resets.
 • Submit your streak to a public daily leaderboard with one tap.
@@ -146,7 +146,7 @@ Everything else (Contact Info, Health & Fitness, Financial Info, Location, Sensi
 ### Review Notes (paste into "Notes" box)
 
 ```
-Dopamine Detox uses Apple's Family Controls / DeviceActivity / ManagedSettings frameworks for individual self-management of screen time, in line with the Family Controls entitlement that has been granted to our team (request submitted via the developer.apple.com/contact/request/family-controls-distribution form on May 4, 2026).
+Last Scroll uses Apple's Family Controls / DeviceActivity / ManagedSettings frameworks for individual self-management of screen time, in line with the Family Controls entitlement that has been granted to our team (request submitted via the developer.apple.com/contact/request/family-controls-distribution form on May 4, 2026).
 
 To test:
 1. On first launch, tap through the 3 onboarding screens and grant Screen Time access.
