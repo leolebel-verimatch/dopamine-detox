@@ -49,7 +49,7 @@ targets:
           UIColorName: ""
         UIRequiresFullScreen: false
         UIUserInterfaceStyle: Dark
-        CFBundleDisplayName: Dopamine Detox
+        CFBundleDisplayName: Dopamine Cap
         ITSAppUsesNonExemptEncryption: false
         SUPABASE_URL: $(SUPABASE_URL)
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
@@ -107,7 +107,7 @@ targets:
         NSExtension:
           NSExtensionPointIdentifier: com.apple.deviceactivity.monitor-extension
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).DopamineDetoxMonitor
-        CFBundleDisplayName: Dopamine Detox Monitor
+        CFBundleDisplayName: Dopamine Cap Monitor
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cheddarlebel.dopaminedetox.monitor

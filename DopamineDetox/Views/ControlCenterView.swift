@@ -91,7 +91,7 @@ struct ControlCenterView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Dopamine Detox")
+                Text("Dopamine Cap")
                     .font(.system(.title3, weight: .medium))
                     .foregroundStyle(Theme.textPrimary)
                 Text(statusBadge)

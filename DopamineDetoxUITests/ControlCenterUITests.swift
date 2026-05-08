@@ -14,7 +14,7 @@ final class ControlCenterUITests: XCTestCase {
 
     func testLaunchAndShowsControlCenter() {
         let app = launchedApp()
-        XCTAssertTrue(app.staticTexts["Dopamine Detox"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Dopamine Cap"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Choose distraction apps"].exists)
     }
 
