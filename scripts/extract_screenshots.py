@@ -20,7 +20,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
 
     root = json.loads(run([
-        "xcrun", "xcresulttool", "get",
+        "xcrun", "xcresulttool", "get", "--legacy",
         "--path", str(xcresult), "--format", "json",
     ]))
 
@@ -36,7 +36,7 @@ def main():
         sys.exit(1)
 
     tests = json.loads(run([
-        "xcrun", "xcresulttool", "get",
+        "xcrun", "xcresulttool", "get", "--legacy",
         "--path", str(xcresult), "--id", test_ref_id, "--format", "json",
     ]))
 
@@ -60,7 +60,7 @@ def main():
                 out_name = name if name.endswith(".png") else f"{name}.png"
                 out_path = out / out_name
                 subprocess.check_call([
-                    "xcrun", "xcresulttool", "export",
+                    "xcrun", "xcresulttool", "export", "--legacy",
                     "--path", str(xcresult),
                     "--id", payload_id,
                     "--type", "file",

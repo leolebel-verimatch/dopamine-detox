@@ -26,7 +26,7 @@ final class ScreenshotTests: XCTestCase {
 
     func testCaptureControlCenterIdle() {
         let app = launchedApp()
-        XCTAssertTrue(app.staticTexts["Dopamine Detox"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Last Scroll"].waitForExistence(timeout: 5))
         snapshot(app, named: "01-control-center-idle")
     }
 
