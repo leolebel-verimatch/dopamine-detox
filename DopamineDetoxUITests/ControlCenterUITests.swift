@@ -25,14 +25,10 @@ final class ControlCenterUITests: XCTestCase {
         XCTAssertFalse(startButton.isEnabled)
     }
 
-    func testLeaderboardTabIsPresent() {
+    func testSubmitStreakHiddenWhenSupabaseUnconfigured() {
         let app = launchedApp()
-        XCTAssertTrue(app.tabBars.buttons["Leaderboard"].waitForExistence(timeout: 5))
-    }
-
-    func testLeaderboardOpens() {
-        let app = launchedApp()
-        app.tabBars.buttons["Leaderboard"].tap()
-        XCTAssertTrue(app.staticTexts["Leaderboard"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Last Scroll"].waitForExistence(timeout: 5))
+        // Without Supabase keys baked in, the submit-streak CTA + leaderboard tab are hidden.
+        XCTAssertFalse(app.buttons["Submit streak to leaderboard"].exists)
     }
 }

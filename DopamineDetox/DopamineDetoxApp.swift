@@ -30,12 +30,20 @@ struct DopamineDetoxApp: App {
 }
 
 struct RootView: View {
+    private var leaderboardEnabled: Bool { SupabaseService.shared.isConfigured }
+
     var body: some View {
-        TabView {
-            ControlCenterView()
-                .tabItem { Label("Control", systemImage: "shield.lefthalf.filled") }
-            LeaderboardView()
-                .tabItem { Label("Leaderboard", systemImage: "trophy") }
+        Group {
+            if leaderboardEnabled {
+                TabView {
+                    ControlCenterView()
+                        .tabItem { Label("Control", systemImage: "shield.lefthalf.filled") }
+                    LeaderboardView()
+                        .tabItem { Label("Leaderboard", systemImage: "trophy") }
+                }
+            } else {
+                ControlCenterView()
+            }
         }
         .tint(Theme.accent)
     }

@@ -184,19 +184,21 @@ struct ControlCenterView: View {
                 }
             }
 
-            Button {
-                Task { await submitStreak() }
-            } label: {
-                HStack(spacing: 8) {
-                    if submitting { ProgressView().scaleEffect(0.7) }
-                    Text(alreadySubmittedToday ? "Streak submitted" : "Submit streak to leaderboard")
-                        .font(.footnote)
-                        .foregroundStyle(alreadySubmittedToday ? Theme.success : Theme.textSecondary)
+            if SupabaseService.shared.isConfigured {
+                Button {
+                    Task { await submitStreak() }
+                } label: {
+                    HStack(spacing: 8) {
+                        if submitting { ProgressView().scaleEffect(0.7) }
+                        Text(alreadySubmittedToday ? "Streak submitted" : "Submit streak to leaderboard")
+                            .font(.footnote)
+                            .foregroundStyle(alreadySubmittedToday ? Theme.success : Theme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
+                .disabled(submitting || alreadySubmittedToday)
             }
-            .disabled(submitting || alreadySubmittedToday)
         }
     }
 

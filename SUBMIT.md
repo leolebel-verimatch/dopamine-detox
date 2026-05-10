@@ -1,123 +1,80 @@
-# Submission walkthrough — once Apple approves the entitlement
+# Submission — current state (May 10, 2026)
 
-This is the path from "approval email arrived" to "submitted for review". Reckon ~90 minutes start to finish.
+## What's already done
 
-## 0. Prerequisites (already done)
+- [x] Code complete, build green, 17 unit + 4 UI + 3 screenshot tests passing
+- [x] Repo public + GitHub Pages live at <https://leolebel-verimatch.github.io/dopamine-detox/>
+  - `/privacy.html`, `/terms.html`, `/support.html` all 200 OK
+- [x] Apple App Group registered (`group.com.cheddarlebel.dopaminedetox`)
+- [x] Two App IDs registered with App Groups bound
+- [x] Family Controls **distribution entitlement requested** May 4 (status: pending Apple)
+- [x] ASC listing created (app id `6767400033`, name **Last Scroll**)
+- [x] ASC metadata pushed via API: subtitle, categories (Productivity / Health & Fitness), description, keywords, promo text, support / marketing / privacy URLs, content rights
+- [x] Age rating set (4+, no objectionable content, 173 countries)
+- [x] App Privacy nutrition labels published (User ID + Other Data, both unlinked, no tracking)
+- [x] App Review notes pre-populated via API (review id `da92e413-…-c4ade46237d2`)
+- [x] Screenshots captured (5 iPhone 17 Pro Max, 4 iPad Pro 13")
+- [x] `scripts/upload.sh` — archive + export + ASC upload via ASC API key (works end-to-end except for the entitlement-embed step which awaits Apple's flip)
+- [x] `ci/ExportOptions.plist` ready (app-store-connect, automatic signing, team `465YNNXPJ4`)
+- [x] DEVELOPMENT_TEAM and `ITSAppUsesNonExemptEncryption=false` pinned in `project.yml`
+- [x] Graceful degradation when Supabase keys not configured — leaderboard tab + submit button hidden, no broken UX visible to reviewers
 
-- [x] Repo on GitHub: `leolebel-verimatch/dopamine-detox`
-- [x] Family Controls entitlement request submitted (form at developer.apple.com)
-- [x] App Group `group.com.cheddarlebel.dopaminedetox` registered
-- [x] App IDs `com.cheddarlebel.dopaminedetox` and `…monitor` registered with App Groups capability
-- [x] DEVELOPMENT_TEAM `465YNNXPJ4` pinned in `project.yml`
-- [x] Privacy policy + terms + support pages in `/docs` ready for GitHub Pages
-- [x] App Store metadata drafted in `/store/metadata.md`
-- [x] Screenshot capture script at `/scripts/capture_screenshots.sh`
-- [x] CI green on macos-15 + Xcode 16
+## What's still blocked
 
-## 1. When the approval email arrives (~minutes)
+### Apple (waiting on them)
 
-Apple emails when the entitlement is granted to your team. Then:
+- [ ] **Family Controls Distribution entitlement approval**
+  - Submitted May 4. Approval window is typically 1–5 business days.
+  - When it lands, Apple emails leo.lebel@me.com and the capability becomes selectable in <https://developer.apple.com/account/resources/identifiers/list>.
+  - If approval drags past 7 business days, reply to the original request with: "Reaching out to check on the status of this Family Controls Distribution entitlement request (Team ID 465YNNXPJ4, app `com.cheddarlebel.dopaminedetox`). Happy to clarify any aspect of the proposed use case."
 
-1. Go to <https://developer.apple.com/account/resources/identifiers/list>.
-2. Open `com.cheddarlebel.dopaminedetox`. The **Family Controls** capability checkbox is now selectable. Tick it. **Save**.
-3. Open `com.cheddarlebel.dopaminedetox.monitor`. Tick **Family Controls**. **Save**.
+### Optional but recommended before public release
 
-## 2. Wire Supabase (~5 min)
+- [ ] **Supabase project + keys** (5 min, your machine — the dashboard hard-blocks browser automation)
+  - <https://supabase.com/dashboard/projects> → **New project**
+  - Name: `Last Scroll`
+  - DB password: `Wh@tismyPW38` (saved in `~/memory/accounts.md`)
+  - Run the schema block from `README.md` → "Supabase setup" in **SQL Editor**
+  - **Project Settings → API** → copy URL + anon key
+  - Edit `project.yml`:
+    ```yaml
+    SUPABASE_URL: https://<project>.supabase.co
+    SUPABASE_ANON_KEY: <anon-key>
+    ```
+  - `xcodegen generate`
+  - With keys present, the Leaderboard tab + Submit-streak button re-enable automatically.
 
-If you haven't already, finish steps 1.1–1.6 in `SETUP.md`:
+- [ ] **Real-device test** (~15 min, post-entitlement)
+  - Plug iPhone in.
+  - In Xcode: change run target to your device, Cmd+R.
+  - Confirm onboarding → Screen Time grant → pick distraction → Start day.
+  - Verify monitoring shows up under iOS Settings → Screen Time.
+  - (Optional) temporarily lower `dailyLimitMinutes` to 1 in `Shared/AppConstants.swift` to verify the shield actually fires; revert before archive.
 
-```bash
-# After you've copied the URL + anon key from Supabase dashboard
-# into project.yml, regenerate:
-xcodegen generate
-```
+## Once Apple approves (the path to TestFlight)
 
-## 3. Enable GitHub Pages (~2 min)
+1. Open <https://developer.apple.com/account/resources/identifiers/list>.
+2. Open the `com.cheddarlebel.dopaminedetox` App ID. Tick **Family Controls (Distribution)**. Save.
+3. Same for `com.cheddarlebel.dopaminedetox.monitor`. Save.
+4. Back in this repo:
+   ```bash
+   ./scripts/upload.sh
+   ```
+   This archives + signs + exports + uploads to App Store Connect using the ASC API key. ~3 min build + ~10 min Apple processing.
+5. Wait for the "Build is processed" email from Apple (~10–60 min).
+6. Open <https://appstoreconnect.apple.com/apps/6767400033/distribution/version> → select the build → submit.
+7. Submit for review. Review notes are already attached; no further input needed during submit.
 
-1. <https://github.com/leolebel-verimatch/dopamine-detox/settings/pages>
-2. Source: **Deploy from a branch** → **main** → **/docs** → **Save**.
-3. Wait ~1 min. The site goes live at `https://leolebel-verimatch.github.io/dopamine-detox/`.
-4. Sanity check:
-   - `https://leolebel-verimatch.github.io/dopamine-detox/privacy.html`
-   - `https://leolebel-verimatch.github.io/dopamine-detox/support.html`
+## Files / IDs / URLs you'll need
 
-## 4. Capture screenshots (~10 min)
-
-```bash
-cd ~/clawd/dopamine-detox
-./scripts/capture_screenshots.sh
-```
-
-Check `screenshots/6.9-inch/` and `screenshots/13-inch/` for the PNGs. Apple requires at least:
-
-- **iPhone 6.9"** (iPhone 16/17 Pro Max): 5–10 screenshots
-- **iPad 13"** (iPad Pro M5): 5–10 screenshots — only if you keep iPad as a supported device family.
-
-If iPad screenshots are too plain, drop iPad support by setting `TARGETED_DEVICE_FAMILY: "1"` in `project.yml`.
-
-## 5. Test on a real device (~15 min)
-
-```bash
-# Connect iPhone, then in Xcode:
-# - Select your device as the run target
-# - Cmd+R
-```
-
-Verify:
-- [ ] First launch shows onboarding
-- [ ] Granting Screen Time prompt works
-- [ ] FamilyActivityPicker presents real apps
-- [ ] After picking and starting a day, monitoring is visible in iOS Settings → Screen Time
-- [ ] Emergency unlock view accepts the exact phrase (case-insensitive, whitespace-trim)
-- [ ] Leaderboard fetches from Supabase
-- [ ] Submit streak round-trips and disables the button
-
-If the shield won't fire and you can't wait 2 hours: temporarily set `dailyLimitMinutes` to 1 in `Shared/AppConstants.swift`, run, use the apps for 60 seconds, observe the shield, revert before archive.
-
-## 6. Bump version + archive (~5 min)
-
-```bash
-# bump if you've already uploaded earlier 1.0.0 build
-# update MARKETING_VERSION + CURRENT_PROJECT_VERSION in project.yml
-xcodegen generate
-```
-
-In Xcode:
-
-1. Scheme → **DopamineDetox**
-2. Run target → **Any iOS Device (arm64)**
-3. Product → Archive
-4. Wait ~3 min
-5. Organizer opens → **Distribute App** → **App Store Connect** → **Upload**
-6. Sign with automatic — Xcode will create the matching distribution profile
-7. Wait for processing (~10–60 min). You'll get an email when the build is ready in App Store Connect.
-
-## 7. Create the App Store Connect listing (~20 min)
-
-1. <https://appstoreconnect.apple.com/apps> → **+** → **New App**
-2. Platform: iOS · Name: **Last Scroll** · Primary Language: English (U.S.) · Bundle ID: pick `com.cheddarlebel.dopaminedetox` · SKU: `dopamine-detox-ios` · User Access: Full Access
-3. Fill every field from `store/metadata.md`:
-   - **App Information** tab: subtitle, category, age rating questionnaire, content rights, copyright
-   - **Pricing and Availability**: Free, all territories
-   - **App Privacy**: answer per `metadata.md` — User ID + Other Data, both not linked, no tracking
-   - **Version 1.0**:
-     - Promotional Text
-     - Description
-     - Keywords
-     - Support URL: `https://leolebel-verimatch.github.io/dopamine-detox/support.html`
-     - Marketing URL: `https://leolebel-verimatch.github.io/dopamine-detox/`
-     - Privacy Policy URL: `https://leolebel-verimatch.github.io/dopamine-detox/privacy.html`
-     - Upload screenshots (drag PNGs from `screenshots/`)
-     - Build: select the one that just finished processing
-     - **App Review Information**: paste the Notes block from `metadata.md`
-
-## 8. Submit for review
-
-1. Top right → **Add for Review** → **Submit to App Review**
-2. Apple typically responds in 1–3 days. Family Controls apps may take longer and often get a clarification request — answer it within 24h to keep momentum.
-
-## 9. After approval
-
-- **Manual release** vs **Automatic release**: pick automatic for v1 unless you want to coordinate marketing.
-- Watch the Crashes view in App Store Connect for the first 48 hours.
-- Email Apple's Family Controls team if you ever need to bump the daily limit, change the permitted use case, or add new categories of behavior — that's a clarification, not a re-application.
+| | |
+|---|---|
+| ASC app id | `6767400033` |
+| ASC version id | `f17153c0-fa4d-49c2-9b61-d78549173441` (1.0) |
+| Bundle id (app) | `com.cheddarlebel.dopaminedetox` |
+| Bundle id (extension) | `com.cheddarlebel.dopaminedetox.monitor` |
+| App Group | `group.com.cheddarlebel.dopaminedetox` |
+| Team id | `465YNNXPJ4` |
+| ASC API key | `24P7LHL3QA` (`~/.private_keys/AuthKey_24P7LHL3QA.p8`) |
+| ASC issuer | `d40a5bd9-fd5a-4f65-a0aa-21804fbd2c72` |
+| Public site | <https://leolebel-verimatch.github.io/dopamine-detox/> |
