@@ -63,6 +63,11 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         SUPABASE_URL: https://YOUR_PROJECT.supabase.co
         SUPABASE_ANON_KEY: REPLACE_ME
+      configs:
+        Debug:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: Apple Development
+          PROVISIONING_PROFILE_SPECIFIER: LastScroll Dev main
     dependencies:
       - target: DopamineDetoxMonitor
         embed: true
@@ -120,6 +125,11 @@ targets:
         CODE_SIGN_ENTITLEMENTS: DopamineDetoxMonitor/DopamineDetoxMonitor.entitlements
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1,2"
+      configs:
+        Debug:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: Apple Development
+          PROVISIONING_PROFILE_SPECIFIER: LastScroll Dev monitor
 
   DopamineDetoxShield:
     type: app-extension
@@ -143,6 +153,11 @@ targets:
         CODE_SIGN_ENTITLEMENTS: DopamineDetoxShield/DopamineDetoxShield.entitlements
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1,2"
+      configs:
+        Debug:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: Apple Development
+          PROVISIONING_PROFILE_SPECIFIER: LastScroll Dev shield
 
   DopamineDetoxWidget:
     type: app-extension
@@ -165,3 +180,8 @@ targets:
         CODE_SIGN_ENTITLEMENTS: DopamineDetoxWidget/DopamineDetoxWidget.entitlements
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1,2"
+      configs:
+        Debug:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: Apple Development
+          PROVISIONING_PROFILE_SPECIFIER: LastScroll Dev widget
