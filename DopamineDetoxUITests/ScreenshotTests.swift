@@ -1,9 +1,6 @@
 import XCTest
 
 /// Run with the `Screenshots` scheme on each App-Store-required simulator size.
-/// `xcrun simctl io <sim> screenshot path.png` is alternative for grabbing the raw simulator
-/// frame, but XCTAttachment captures via the test runner, which is what the App Store Fastlane
-/// flow expects. Output is in the .xcresult bundle.
 final class ScreenshotTests: XCTestCase {
 
     override func setUp() {
@@ -32,7 +29,6 @@ final class ScreenshotTests: XCTestCase {
 
     func testCaptureLeaderboard() {
         let app = launchedApp()
-        // Leaderboard tab is gated on SupabaseService.isConfigured — skip if hidden.
         let leaderboard = app.tabBars.buttons["Leaderboard"]
         guard leaderboard.waitForExistence(timeout: 3) else { return }
         leaderboard.tap()
@@ -50,7 +46,10 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Build a streak"].waitForExistence(timeout: 5))
         snapshot(app, named: "04-onboarding-2")
         app.buttons["Continue"].tap()
-        XCTAssertTrue(app.staticTexts["No easy outs"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Productive Pass + Deep Work"].waitForExistence(timeout: 5))
         snapshot(app, named: "05-onboarding-3")
+        app.buttons["Continue"].tap()
+        XCTAssertTrue(app.staticTexts["Pick your grade"].waitForExistence(timeout: 5))
+        snapshot(app, named: "06-onboarding-grade")
     }
 }

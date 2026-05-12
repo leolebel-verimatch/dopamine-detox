@@ -3,50 +3,85 @@ import SwiftUI
 struct ControlCenterView: View {
     @EnvironmentObject var screenTime: ScreenTimeManager
     @State private var showingPicker = false
+    @State private var showingProductivePass = false
     @State private var showingUnlock = false
+    @State private var showingSettings = false
     @State private var submitting = false
     @State private var submitMessage: String?
     @State private var lastSubmittedDay: String?
+    @State private var now: Date = .now
+
+    private let timer = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
 
     private var streak: Int { screenTime.history.currentStreak }
 
-    private enum Status { case idle, monitoring, shielded }
+    private enum Status { case idle, monitoring, lowBudget, shielded, pomodoro, disqualified }
 
     private var status: Status {
+        if screenTime.disqualified { return .disqualified }
+        if screenTime.pomodoroActive { return .pomodoro }
         if screenTime.shielded { return .shielded }
-        if screenTime.monitoringStartedAt != nil { return .monitoring }
+        if screenTime.monitoringStartedAt != nil {
+            return screenTime.remainingMinutes < 15 ? .lowBudget : .monitoring
+        }
         return .idle
     }
 
     private var gaugeProgress: Double {
         switch status {
-        case .idle: return 0
-        case .monitoring: return 0.5
-        case .shielded: return 1.0
+        case .idle: return 0.0
+        case .pomodoro:
+            guard let end = screenTime.pomodoroEndsAt else { return 0.5 }
+            let total = Double(AppConstants.pomodoroMinutes * 60)
+            let remaining = max(0, end.timeIntervalSince(now))
+            return 1.0 - (remaining / total)
+        case .monitoring, .lowBudget:
+            let used = Double(screenTime.minutesUsedToday)
+            return min(1.0, used / Double(AppConstants.dailyLimitMinutes))
+        case .shielded, .disqualified: return 1.0
         }
     }
 
     private var gaugeTint: Color {
         switch status {
         case .idle: return Theme.textSecondary
-        case .monitoring: return Theme.accent
-        case .shielded: return Theme.danger
+        case .monitoring, .pomodoro: return Theme.accent
+        case .lowBudget: return Theme.warning
+        case .shielded, .disqualified: return Theme.danger
         }
     }
 
     private var statusBadge: String {
         switch status {
         case .idle: return "Idle"
-        case .monitoring: return "Monitoring"
+        case .monitoring: return "Safe"
+        case .pomodoro: return "Deep Work"
+        case .lowBudget: return "Low Budget"
         case .shielded: return "Shielded"
+        case .disqualified: return "Disqualified"
         }
     }
 
     private var statusBadgeColor: Color {
+        gaugeTint
+    }
+
+    private var centerValue: String {
         switch status {
-        case .idle: return Theme.textSecondary
-        case .monitoring: return Theme.accent
-        case .shielded: return Theme.danger
+        case .pomodoro:
+            guard let end = screenTime.pomodoroEndsAt else { return "25:00" }
+            let remaining = max(0, Int(end.timeIntervalSince(now)))
+            return String(format: "%d:%02d", remaining / 60, remaining % 60)
+        default:
+            return "\(screenTime.remainingMinutes)"
+        }
+    }
+
+    private var centerLabel: String {
+        switch status {
+        case .pomodoro: return "min left"
+        case .shielded, .disqualified: return "shielded"
+        default: return "min budget"
         }
     }
 
@@ -64,7 +99,9 @@ struct ControlCenterView: View {
             ScrollView {
                 VStack(spacing: 28) {
                     header
-                    if screenTime.authState == .denied {
+                    if screenTime.disqualified {
+                        disqualifiedBanner
+                    } else if screenTime.authState == .denied {
                         authDeniedBanner
                     }
                     gauge
@@ -72,11 +109,16 @@ struct ControlCenterView: View {
                     actions
                 }
                 .padding(28)
-                .frame(minHeight: UIScreen.main.bounds.height - 80)
+                .frame(maxWidth: .infinity, minHeight: 700)
             }
         }
         .sheet(isPresented: $showingPicker) {
             AppSelectionView(initial: screenTime.selection)
+                .environmentObject(screenTime)
+                .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showingProductivePass) {
+            ProductivePassView(initial: screenTime.productivePass)
                 .environmentObject(screenTime)
                 .preferredColorScheme(.dark)
         }
@@ -85,11 +127,22 @@ struct ControlCenterView: View {
                 .environmentObject(screenTime)
                 .preferredColorScheme(.dark)
         }
-        .onAppear { restoreLastSubmittedDay() }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+                .environmentObject(screenTime)
+                .preferredColorScheme(.dark)
+        }
+        .onAppear {
+            restoreLastSubmittedDay()
+            screenTime.sendHeartbeat()
+            autoSubmitIfDue()
+        }
+        .onReceive(timer) { now = $0 }
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
     }
 
     private var header: some View {
-        HStack {
+        HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Last Scroll")
                     .font(.system(.title3, weight: .medium))
@@ -101,7 +154,43 @@ struct ControlCenterView: View {
                     .foregroundStyle(statusBadgeColor)
             }
             Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(streak)")
+                    .font(.system(.title2, weight: .light).monospacedDigit())
+                    .foregroundStyle(Theme.textPrimary)
+                Text("day streak")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+            Button {
+                showingSettings = true
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.title3)
+                    .foregroundStyle(Theme.textSecondary)
+                    .padding(.leading, 14)
+            }
+            .accessibilityLabel("Settings")
         }
+    }
+
+    private var disqualifiedBanner: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Disqualified for today")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(Theme.textPrimary)
+            Text("Screen Time access was revoked while monitoring was active. Re-enable it to continue tomorrow.")
+                .font(.caption)
+                .foregroundStyle(Theme.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Theme.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Theme.danger.opacity(0.8), lineWidth: 1)
+        )
+        .cornerRadius(8)
     }
 
     private var authDeniedBanner: some View {
@@ -109,7 +198,7 @@ struct ControlCenterView: View {
             Text("Screen Time access denied")
                 .font(.callout.weight(.medium))
                 .foregroundStyle(Theme.textPrimary)
-            Text("Open Settings → Screen Time → Family Controls and allow Dopamine Detox.")
+            Text("Open Settings → Screen Time → Family Controls and allow Last Scroll.")
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
             Button("Open Settings") {
@@ -132,30 +221,46 @@ struct ControlCenterView: View {
     private var gauge: some View {
         CircularGaugeView(
             progress: gaugeProgress,
-            centerValue: "\(streak)",
-            centerLabel: streak == 1 ? "day streak" : "day streak",
+            centerValue: centerValue,
+            centerLabel: centerLabel,
             tint: gaugeTint
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(centerValue) \(centerLabel), \(statusBadge)")
     }
 
     private var statusLine: some View {
         VStack(spacing: 6) {
-            Text("Daily limit \(AppConstants.dailyLimitMinutes) minutes")
-                .font(.caption)
-                .foregroundStyle(Theme.textSecondary)
+            HStack(spacing: 16) {
+                stat(label: "Used", value: "\(screenTime.minutesUsedToday)m")
+                stat(label: "Cap", value: "\(AppConstants.dailyLimitMinutes)m")
+                stat(label: "Score", value: "\(screenTime.todayScore)")
+            }
             switch status {
             case .idle:
-                Text(canStart ? "Ready to start your day" : "Pick distraction apps to begin")
+                Text(canStart ? "Ready to start the day" : "Pick distraction apps to begin")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
             case .monitoring:
-                Text("Tracking against your selected apps")
+                Text("Tracking — productive apps don't count")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
+            case .lowBudget:
+                Text("Under 15 minutes left — slow down")
+                    .font(.caption)
+                    .foregroundStyle(Theme.warning)
+            case .pomodoro:
+                Text("Deep Work focus session — apps shielded")
+                    .font(.caption)
+                    .foregroundStyle(Theme.accent)
             case .shielded:
                 Text("Apps blocked until midnight")
                     .font(.caption)
-                    .foregroundStyle(Theme.danger.opacity(0.85))
+                    .foregroundStyle(Theme.danger)
+            case .disqualified:
+                Text("Today's score is locked at zero")
+                    .font(.caption)
+                    .foregroundStyle(Theme.danger)
             }
             if let submitMessage {
                 Text(submitMessage)
@@ -165,14 +270,49 @@ struct ControlCenterView: View {
         }
     }
 
+    private func stat(label: String, value: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.callout.monospacedDigit())
+                .foregroundStyle(Theme.textPrimary)
+            Text(label)
+                .font(.caption2)
+                .textCase(.uppercase)
+                .tracking(1.5)
+                .foregroundStyle(Theme.textSecondary)
+        }
+    }
+
     private var actions: some View {
         VStack(spacing: 10) {
             primaryButton("Choose distraction apps") { showingPicker = true }
+            primaryButton("Productive Pass (whitelist)") { showingProductivePass = true }
             primaryButton(status == .idle ? "Start day" : "Restart day") {
+                UISelectionFeedbackGenerator().selectionChanged()
                 try? screenTime.startMonitoring()
             }
             .opacity(canStart ? 1 : 0.4)
             .disabled(!canStart)
+
+            if status == .pomodoro {
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    screenTime.cancelPomodoro()
+                } label: {
+                    Text("End Deep Work early")
+                        .font(.callout)
+                        .foregroundStyle(Theme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+            } else {
+                primaryButton("Deep Work · 25 min") {
+                    UISelectionFeedbackGenerator().selectionChanged()
+                    try? screenTime.startPomodoro()
+                }
+                .opacity(canStart ? 1 : 0.4)
+                .disabled(!canStart)
+            }
 
             if status == .shielded {
                 Button { showingUnlock = true } label: {
@@ -190,7 +330,7 @@ struct ControlCenterView: View {
                 } label: {
                     HStack(spacing: 8) {
                         if submitting { ProgressView().scaleEffect(0.7) }
-                        Text(alreadySubmittedToday ? "Streak submitted" : "Submit streak to leaderboard")
+                        Text(alreadySubmittedToday ? "Submitted" : "Submit to leaderboard")
                             .font(.footnote)
                             .foregroundStyle(alreadySubmittedToday ? Theme.success : Theme.textSecondary)
                     }
@@ -219,6 +359,14 @@ struct ControlCenterView: View {
         lastSubmittedDay = defaults?.string(forKey: SharedKeys.lastSubmittedDay)
     }
 
+    private func autoSubmitIfDue() {
+        let hour = Calendar.current.component(.hour, from: Date())
+        guard SupabaseService.shared.isConfigured,
+              hour >= AppConstants.autoSyncHour,
+              !alreadySubmittedToday else { return }
+        Task { await submitStreak() }
+    }
+
     private func submitStreak() async {
         submitting = true
         defer { submitting = false }
@@ -226,14 +374,16 @@ struct ControlCenterView: View {
         do {
             try await SupabaseService.shared.upsertStreak(
                 userId: screenTime.stableUserId,
-                score: streak,
-                day: day
+                score: screenTime.todayScore,
+                day: day,
+                minutesUsed: screenTime.minutesUsedToday,
+                shielded: screenTime.shielded
             )
             let defaults = UserDefaults(suiteName: AppConstants.appGroup)
             defaults?.set(day, forKey: SharedKeys.lastSubmittedDay)
-            defaults?.set(streak, forKey: SharedKeys.lastSubmittedScore)
+            defaults?.set(screenTime.todayScore, forKey: SharedKeys.lastSubmittedScore)
             lastSubmittedDay = day
-            submitMessage = "Submitted streak: \(streak)"
+            submitMessage = "Submitted score: \(screenTime.todayScore)"
         } catch SupabaseError.notConfigured {
             submitMessage = "Leaderboard not configured"
         } catch {

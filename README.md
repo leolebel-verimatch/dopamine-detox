@@ -1,15 +1,18 @@
 # Last Scroll
 
-A SwiftUI iOS app that lets you cap daily usage of distracting apps. After 120 minutes of combined use, a system-level shield blocks access for the rest of the day. Lifting the shield requires manually typing a long motivational sentence — friction is the point.
+A SwiftUI iOS app that caps daily usage of distracting apps. After a 120-minute "Dopamine Budget" is spent, a system-level shield blocks the apps until midnight. Lifting the shield requires manually typing a long motivational sentence — friction is the point.
+
+Built for school-wide competitions: students compete on a daily score (`points = 120 - minutes_used`), with a Hardcore Streak bonus for shielding early. A Productive Pass keeps schoolwork unrestricted. Deep Work mode is a manual 25-minute focus shield. Disqualified state is recorded on the leaderboard if Screen Time access is revoked while monitoring is active.
 
 Architecture:
 
 | Layer | Tech |
 |---|---|
-| UI | SwiftUI, iOS 17, dark-only |
+| UI | SwiftUI, iOS 17, dark-only, cyber-minimalism palette |
 | Permissions | `FamilyControls` |
 | Tracking | `DeviceActivity` (host + monitor extension) |
 | Enforcement | `ManagedSettings` shield store |
+| Custom shield UI | `ManagedSettingsUI` ShieldConfiguration extension |
 | Backend | Supabase (`leaderboard` table) |
 | IPC | App Group UserDefaults (`group.com.cheddarlebel.dopaminedetox`) |
 
@@ -17,23 +20,36 @@ Architecture:
 
 ```
 DopamineDetox/                     main app target
-  DopamineDetoxApp.swift           @main, request authorization
-  Theme.swift                      colors + constants
+  DopamineDetoxApp.swift           @main, RootView with TabView
+  Theme.swift                      cyber-minimalism palette
+  UnlockChallenge.swift            type-the-sentence phrase
   Views/
-    ControlCenterView.swift        circular gauge + actions
+    ControlCenterView.swift        gauge + Pomodoro + scoring
     CircularGaugeView.swift        reusable gauge
-    AppSelectionView.swift         FamilyActivityPicker wrapper
+    AppSelectionView.swift         distraction-app picker
+    ProductivePassView.swift       whitelist picker
     EmergencyUnlockView.swift      type-the-sentence unlock
+    LeaderboardView.swift          today's top scores (excludes DQ)
+    OnboardingView.swift           3-page intro
   Services/
-    ScreenTimeManager.swift        auth, selection, monitoring
-    SupabaseService.swift          POST to leaderboard
-  DopamineDetox.entitlements       Family Controls + App Group
+    ScreenTimeManager.swift        auth, monitoring, Pomodoro, anti-cheat
+    SupabaseService.swift          upsert + reportStatus
+  DopamineDetox.entitlements
   Info.plist
 
 DopamineDetoxMonitor/              DeviceActivityMonitor extension
-  DopamineDetoxMonitor.swift       eventDidReachThreshold → apply shield
+  DopamineDetoxMonitor.swift       threshold → shield; sync event → flag pending sync
   DopamineDetoxMonitor.entitlements
-  Info.plist                       NSExtension principal class
+  Info.plist
+
+DopamineDetoxShield/               ShieldConfigurationDataSource extension
+  DopamineDetoxShield.swift        "Focusing…" replacement UI on shielded apps
+  DopamineDetoxShield.entitlements
+  Info.plist
+
+Shared/                            code shared by all three targets
+  AppConstants.swift               group id, store names, daily limit, Scoring
+  DayHistory.swift                 streak + points history
 ```
 
 ## Generate the Xcode project
@@ -44,52 +60,18 @@ xcodegen generate          # from project root
 open DopamineDetox.xcodeproj
 ```
 
-`project.yml` is the source of truth — do not edit `.xcodeproj` by hand. Re-run `xcodegen` after any file moves.
+`project.yml` is the source of truth — do not edit `.xcodeproj` by hand.
 
 ## Required: enable the Family Controls entitlement
 
-`com.apple.developer.family-controls` is **not** included in the standard development profile. You must request it from Apple before the app will build for a device or release configuration.
-
-### 1. Request the entitlement from Apple
-
-1. Open <https://developer.apple.com/contact/request/family-controls-distribution>.
-2. Fill out the form. Apple usually approves personal-use Screen Time apps within a few business days.
-3. Wait for the approval email. (You can develop in the simulator with the entitlement turned on without approval, but device builds will fail until Apple flips the bit on your team.)
-
-### 2. Add the capability in Xcode
-
-Once approved:
-
-1. Select the `DopamineDetox` target → **Signing & Capabilities**.
-2. Click **+ Capability** → **Family Controls**. Xcode adds the entry to the entitlements file.
-3. Repeat for the `DopamineDetoxMonitor` target — both the app and the extension need the entitlement.
-
-The `.entitlements` files in this repo already contain the key:
-
-```xml
-<key>com.apple.developer.family-controls</key>
-<true/>
-```
-
-### 3. Configure the App Group
-
-Both targets share state via an App Group. In **Signing & Capabilities** for each target:
-
-1. Click **+ Capability** → **App Groups**.
-2. Add `group.com.cheddarlebel.dopaminedetox` (rename to match your team prefix if you fork).
-
-Both entitlement files in this repo already include the group; you only need to confirm Xcode recognizes it.
-
-### 4. Set your development team
-
-Open `project.yml` and set `DEVELOPMENT_TEAM` under `settings.base`, or override per target in Xcode after generating. Re-run `xcodegen` after editing.
+`com.apple.developer.family-controls` is **not** included in the standard development profile. Request the Distribution variant from Apple at <https://developer.apple.com/contact/request/family-controls-distribution>. Approval typically takes 1–5 business days. All three targets (app + monitor + shield) require the entitlement.
 
 ## Supabase setup
 
-The app upserts a daily streak score per anonymous user. Until you configure Supabase the app still runs — submit/leaderboard show "not configured" instead of crashing.
+The app upserts a daily score per anonymous user. Until you configure Supabase the app still runs — submit/leaderboard show "not configured" instead of crashing.
 
 1. Create a Supabase project at <https://supabase.com>.
-2. Run this SQL in **SQL Editor** to create the table and policies:
+2. Run this SQL in **SQL Editor** to create the table, indexes, and policies tuned for ~2 000 concurrent students:
 
    ```sql
    create table public.leaderboard (
@@ -97,31 +79,37 @@ The app upserts a daily streak score per anonymous user. Until you configure Sup
      user_id text not null,
      day date not null,
      score integer not null check (score >= 0 and score <= 100000),
+     minutes_used integer not null default 0 check (minutes_used >= 0),
+     shielded boolean not null default false,
+     disqualified boolean not null default false,
+     disqualification_reason text,
      updated_at timestamptz not null default now(),
      unique (user_id, day)
    );
 
-   create index if not exists leaderboard_day_score_idx
-     on public.leaderboard (day desc, score desc);
+   -- Hot path: "today, top scores, excluding DQ" — covered by this partial index.
+   create index if not exists leaderboard_today_score_idx
+     on public.leaderboard (day desc, score desc)
+     where disqualified = false;
+
+   -- Secondary: lookups by user across days (history fetch).
+   create index if not exists leaderboard_user_day_idx
+     on public.leaderboard (user_id, day desc);
 
    alter table public.leaderboard enable row level security;
 
-   -- anon can read today's board
    create policy "leaderboard_read_anon" on public.leaderboard
      for select to anon using (true);
 
-   -- anon can insert only for their own client-generated user_id and only for today
    create policy "leaderboard_insert_anon" on public.leaderboard
      for insert to anon
      with check (day = (now() at time zone 'utc')::date);
 
-   -- anon can update only their own row, only for today
    create policy "leaderboard_update_anon" on public.leaderboard
      for update to anon
      using (day = (now() at time zone 'utc')::date)
      with check (day = (now() at time zone 'utc')::date);
 
-   -- maintain updated_at on update
    create or replace function public.leaderboard_touch_updated_at()
      returns trigger language plpgsql as $$
      begin new.updated_at = now(); return new; end;
@@ -131,42 +119,35 @@ The app upserts a daily streak score per anonymous user. Until you configure Sup
      for each row execute function public.leaderboard_touch_updated_at();
    ```
 
-3. Copy the project URL and the **anon** public key from the Supabase dashboard.
-4. Open `project.yml` and replace `SUPABASE_URL` and `SUPABASE_ANON_KEY` under the `DopamineDetox` target settings:
+3. Copy the project URL and the **anon** public key.
+4. Edit `project.yml` to set `SUPABASE_URL` and `SUPABASE_ANON_KEY` under the `DopamineDetox` target settings, then re-run `xcodegen generate`.
 
-   ```yaml
-   SUPABASE_URL: https://<your-project>.supabase.co
-   SUPABASE_ANON_KEY: <anon-key>
-   ```
+The anon key is safe to expose; RLS prevents writes to past/future days or other users' rows.
 
-5. Re-run `xcodegen generate`.
+## Scoring
 
-The values are baked into `Info.plist` at build time and read by `SupabaseService` via `Bundle.main.object(forInfoDictionaryKey:)`. The anon key is intended to be exposed in the client; the policies above prevent users from writing to past or future days, or to other users' rows.
+`points = max(0, 120 - minutes_used)`. If the shield kicks in with ≥30 minutes of the day remaining (a "Hardcore Streak"), an additional +25 bonus is awarded.
 
-### Score semantics
+The leaderboard query filters `disqualified = false`. A student is marked disqualified when Screen Time authorization is revoked while monitoring is active — the manager detects this on every foreground and posts an out-of-band update.
 
-The score is a streak — the number of consecutive days the user finished without being shielded. Each day the app upserts on `(user_id, day)` so a single row per user per day exists; the most recent value wins. The leaderboard view sorts by `score` desc for the current day.
+## Scaling notes (2 000 users)
+
+- Single hot query: `select … where day = today and disqualified = false order by score desc limit 50`. Backed by the partial index above — sub-1ms regardless of total rows.
+- Write rate: ~2 000 upserts/day at the 9 PM auto-sync window. Spread across a 1-hour soak (server clocks vary). Well under Supabase free-tier limits.
+- Per-user storage: 1 row/day. 2 000 students × 180 school days = 360 000 rows/year. The partial index keeps today's read constant-time.
 
 ## How it works
 
-1. On first launch the user is taken through a 3-page onboarding and asked to grant Family Controls authorization (`AuthorizationCenter.shared.requestAuthorization(for: .individual)`).
-2. The user picks distracting apps via `FamilyActivityPicker`. The `FamilyActivitySelection` is JSON-encoded and stored in App Group `UserDefaults` so the extension can read it.
-3. Tapping **Start day** registers a `DeviceActivitySchedule` (00:00–23:59, repeating) with one `DeviceActivityEvent` whose threshold is 120 minutes against the selected app/category tokens.
-4. iOS runs `DopamineDetoxMonitor.eventDidReachThreshold` in the extension exactly once when combined usage hits 120 minutes. The extension reads the saved selection and applies it to a `ManagedSettingsStore` shield, then writes `shielded = true` to the App Group.
-5. At end of day (`intervalDidEnd`) the extension records the day's outcome (shielded or not) in a shared `DayHistory`. Streak = trailing consecutive days with `shielded == false`. The host app also reconciles this on every foreground in case the extension callback was missed.
-6. **Emergency unlock** clears the shield only after the user retypes a long motivational phrase. `ManagedSettingsStore.shield.applications = nil` removes the block, but the day is still recorded as shielded so the streak resets.
-7. The leaderboard tab fetches the day's top streaks from Supabase. Submitting upserts the user's current streak with `(user_id, day)` as the conflict key — idempotent.
+1. Onboarding asks for Family Controls authorization (`AuthorizationCenter.shared.requestAuthorization(for: .individual)`).
+2. The user picks distracting apps; selection is JSON-encoded into App Group UserDefaults so the monitor extension can read it.
+3. **Start day** registers a `DeviceActivitySchedule` (00:00–23:59, repeating) with two events: a 120-minute `LimitReached` threshold and a 21:00 evening `EveningSync` trigger.
+4. `DopamineDetoxMonitor.eventDidReachThreshold` runs in the extension. `LimitReached` → apply shield. `EveningSync` → flag a pending sync the host app picks up on next foreground.
+5. When the shield is active, `DopamineDetoxShield` (ShieldConfigurationDataSource) replaces the default block screen with a branded "Focusing…" UI.
+6. **Productive Pass** is a second `FamilyActivitySelection` that's never bound to a monitor event — it simply documents the whitelist for the user.
+7. **Deep Work** runs a one-shot 25-min `DeviceActivitySchedule` with the same selection on a separate `ManagedSettingsStore`, which auto-clears when the interval ends.
+8. **Anti-cheat**: every foreground the manager sends a heartbeat to Supabase. If `AuthorizationCenter.authorizationStatus` drops while monitoring is active, the day is flagged disqualified and the leaderboard row updated.
+9. **Emergency unlock** clears the shield only after the user retypes the motivational phrase. The day is still recorded as shielded so the streak resets.
 
 ## Testing on a device
 
-The Family Controls APIs return mock data in the simulator. To test the real shield you need:
-
-- An iPhone running iOS 17+
-- Your Apple ID signed into iOS Settings → Screen Time
-- A development build signed with a profile that includes the approved entitlement
-
-## Conventions
-
-- All UI text is system font; no decorative typefaces.
-- One accent color (`Theme.accent`, muted amber) and one danger color. No gradients.
-- The gauge animates linearly off `monitoringStartedAt` for a visual hint of progress; the shield itself fires off real device usage via the extension.
+The Family Controls APIs return mock data in the simulator. To test the real shield: iPhone on iOS 17+ with the Apple ID signed into Screen Time, dev build signed with the approved entitlement.

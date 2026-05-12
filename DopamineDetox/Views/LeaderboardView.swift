@@ -92,6 +92,7 @@ struct LeaderboardView: View {
 
     private func row(rank: Int, entry: SupabaseService.ScoreEntry) -> some View {
         let isMe = entry.user_id == screenTime.stableUserId
+        let minutes = entry.minutes_used ?? max(0, AppConstants.dailyLimitMinutes - entry.score)
         return HStack(spacing: 16) {
             Text("\(rank)")
                 .font(.callout.monospacedDigit())
@@ -101,14 +102,19 @@ struct LeaderboardView: View {
                 Text(isMe ? "You" : maskedId(entry.user_id))
                     .font(.callout)
                     .foregroundStyle(isMe ? Theme.accent : Theme.textPrimary)
-                Text("\(entry.score) day\(entry.score == 1 ? "" : "s") clean")
+                Text("\(minutes) min used")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
             }
             Spacer()
-            Text("\(entry.score)")
-                .font(.system(.title3, weight: .light).monospacedDigit())
-                .foregroundStyle(isMe ? Theme.accent : Theme.textPrimary)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(entry.score)")
+                    .font(.system(.title3, weight: .light).monospacedDigit())
+                    .foregroundStyle(isMe ? Theme.accent : Theme.textPrimary)
+                Text("points")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.textSecondary)
+            }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 14)

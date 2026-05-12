@@ -12,6 +12,8 @@ schemes:
       targets:
         DopamineDetox: all
         DopamineDetoxMonitor: all
+        DopamineDetoxShield: all
+        DopamineDetoxWidget: all
     test:
       targets:
         - DopamineDetoxTests
@@ -46,7 +48,7 @@ targets:
       path: DopamineDetox/Info.plist
       properties:
         UILaunchScreen:
-          UIColorName: ""
+          UIColorName: LaunchBackground
         UIRequiresFullScreen: false
         UIUserInterfaceStyle: Dark
         CFBundleDisplayName: Last Scroll
@@ -63,6 +65,10 @@ targets:
         SUPABASE_ANON_KEY: REPLACE_ME
     dependencies:
       - target: DopamineDetoxMonitor
+        embed: true
+      - target: DopamineDetoxShield
+        embed: true
+      - target: DopamineDetoxWidget
         embed: true
       - package: Supabase
         product: Supabase
@@ -112,5 +118,50 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cheddarlebel.dopaminedetox.monitor
         CODE_SIGN_ENTITLEMENTS: DopamineDetoxMonitor/DopamineDetoxMonitor.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+  DopamineDetoxShield:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: DopamineDetoxShield
+        excludes:
+          - "Info.plist"
+          - "DopamineDetoxShield.entitlements"
+      - path: Shared
+    info:
+      path: DopamineDetoxShield/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.ManagedSettingsUI.shield-configuration-service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).DopamineDetoxShield
+        CFBundleDisplayName: Last Scroll Shield
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cheddarlebel.dopaminedetox.shield
+        CODE_SIGN_ENTITLEMENTS: DopamineDetoxShield/DopamineDetoxShield.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+  DopamineDetoxWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: DopamineDetoxWidget
+        excludes:
+          - "Info.plist"
+          - "DopamineDetoxWidget.entitlements"
+      - path: Shared
+    info:
+      path: DopamineDetoxWidget/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        CFBundleDisplayName: Last Scroll Widget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cheddarlebel.dopaminedetox.widget
+        CODE_SIGN_ENTITLEMENTS: DopamineDetoxWidget/DopamineDetoxWidget.entitlements
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1,2"

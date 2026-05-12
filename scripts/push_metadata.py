@@ -24,32 +24,32 @@ APP_INFO_LOC_ID = "792f6fb4-e0e4-44a6-8db6-ea85ee9f609b"  # en-US
 VERSION_ID = "f17153c0-fa4d-49c2-9b61-d78549173441"
 VERSION_LOC_ID = "e7607770-0e08-47ba-a6cc-69052a26abd6"  # en-US
 
-DESCRIPTION = """Last Scroll caps the apps that pull you away from your day.
+DESCRIPTION = """Last Scroll turns screen-time discipline into a school-wide contest.
 
-Pick your distractions — Instagram, TikTok, X, YouTube, news, whatever owns your thumb — and the app monitors combined daily use through Apple's Family Controls. The moment you cross 120 minutes, those apps go dark for the rest of the day. iOS does the blocking; we just set the limit.
+Pick your distractions — Instagram, TikTok, X, YouTube, Snapchat, games, whatever owns your thumb — and the app monitors combined daily use through Apple's Family Controls. Cross the 120-minute Dopamine Budget and those apps go dark until midnight. iOS does the blocking; we just set the limit.
 
-How it works:
-• Tap to select the apps and categories you want capped.
-• Tap "Start day". Last Scroll arms a 120-minute daily timer against just those apps.
-• Use them as you normally would. When you reach the limit, they're shielded until midnight.
-• Survive the day under the limit and your streak grows by one. Get shielded and it resets.
-• Submit your streak to a public daily leaderboard with one tap.
+Built for students:
+• Dopamine Budget — a hard 120-minute daily cap on your selected distraction apps.
+• Productive Pass — whitelist Canvas, Google Classroom, Notion, Quizlet, Calculator, and Mail so schoolwork never counts against the budget.
+• Deep Work — a manual 25-minute focus shield that blocks everything you've selected so you can study head-down.
+• School Leaderboard — every day at 9 PM your score (points = 120 − minutes used, plus a Hardcore bonus for shielding early) posts to the contest board.
+• Home Screen Widget — your rank in school + budget remaining at a glance.
+• Grade-tuned motivation — when the shield kicks in, the block screen shows a quote calibrated to your grade level.
 
-The "emergency unlock" is intentionally inconvenient. Lifting the shield requires retyping a long motivational sentence — friction is the whole point. If you wanted easy, you wouldn't need this app.
+Cheat-proofing for fair contests:
+• If Screen Time access is revoked while monitoring is active, the day is automatically flagged Disqualified on the leaderboard.
+• Lifting the shield early ("emergency unlock") still resets your streak — and requires retyping a long motivational sentence. Friction is the whole point.
 
 Privacy:
-• We never see which apps you selected. Apple's Family Controls hands us opaque tokens, not names. We can ask the system to block a token, but we cannot read it.
-• The leaderboard uses an anonymous random ID. It is not tied to your Apple ID, email, name, or any other personal information.
-• No analytics. No advertising. No third-party SDKs that track you. The only thing we send to our server is { anonymous ID, today's date, your streak }.
-• Read the full policy at the privacy link below before you install.
-
-Built for individual self-management. Not for surveilling another adult, not for organizational deployment, not for ad blocking.
+• Apple's Family Controls hands us opaque tokens, not names. We never see which apps you selected.
+• The leaderboard uses an anonymous random ID — never tied to your Apple ID, email, or name.
+• No analytics, no advertising, no third-party tracking. We send only { anonymous ID, today's date, score, minutes used, shielded yes/no, disqualified yes/no }.
 
 Requires iOS 17 or later."""
 
-KEYWORDS = "focus,productivity,screen time,detox,distraction,habit,streak,attention,scroll,doomscroll,blocker"
-PROMO = "Pick the apps that drain your day. After 120 minutes they go dark until midnight. Build a streak, climb the leaderboard, and reclaim your attention."
-SUBTITLE = "Daily cap on doomscrolling"
+KEYWORDS = "focus,productivity,screen time,detox,school,student,contest,study,streak,leaderboard,deep work"
+PROMO = "Hold the 120-minute Dopamine Budget. Shield your distractions. Climb the school leaderboard. Productive Pass keeps schoolwork unrestricted."
+SUBTITLE = "Win the screen-time contest"
 
 # Placeholder until pages is hosted; documented in SETUP.md
 SUPPORT_URL = "https://leolebel-verimatch.github.io/dopamine-detox/support.html"

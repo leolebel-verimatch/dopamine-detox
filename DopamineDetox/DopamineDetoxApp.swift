@@ -23,6 +23,7 @@ struct DopamineDetoxApp: App {
                     screenTime.refreshState()
                     screenTime.resolveYesterdayIfNeeded()
                     screenTime.syncAuthorizationStatus()
+                    screenTime.fireHeartbeatIfNeeded()
                 }
             }
         }
